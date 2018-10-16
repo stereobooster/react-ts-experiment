@@ -7,38 +7,38 @@ type Shape<T> = Partial<T>;
 export type BFValues<T> = ObjMap<T, string>;
 export type BFErrors<T> = Shape<ObjMap<T, string>>;
 type BFTouched<T> = Shape<ObjMap<T, boolean>>;
-type BFState<T> = {
+interface IBFState<T> {
   values: BFValues<T>;
   errors: BFErrors<T>;
   touched: BFTouched<T>;
   isSubmitting: boolean;
-};
+}
 export type BFValidate<T> = (values: BFValues<T>) => [BFErrors<T>, T | void];
 
 // as of now consider only date input,
 // but also should include select, checkbox and other
 const isDiscrete = (type: string) => type === "date";
 
-export interface BFChildren<T> extends BFState<T> {
-  handleSubmit: (e: React.FormEvent<HTMLInputElement>) => void;
+export interface IBFChildren<T> extends IBFState<T> {
+  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
   prefetchIfValid: () => void;
 }
 
-export type BFProps<T> = {
-  submit: (T) => void;
-  prefetch: (T) => void;
+export interface IBFProps<T> {
+  submit: (a: T) => void;
+  prefetch: (a: T) => void;
   initialValues: BFValues<T>;
   validate: BFValidate<T>;
-  children: (a: BFChildren<T>) => React.ReactNode;
-};
+  children: (a: IBFChildren<T>) => React.ReactNode;
+}
 
 export default class BabyFormik<T extends {}> extends React.Component<
-  BFProps<T>,
-  BFState<T>
+  IBFProps<T>,
+  IBFState<T>
 > {
-  constructor(props: BFProps<T>) {
+  constructor(props: IBFProps<T>) {
     super(props);
     this.state = {
       values: props.initialValues,
@@ -47,7 +47,7 @@ export default class BabyFormik<T extends {}> extends React.Component<
       isSubmitting: false
     };
   }
-  handleSubmit = (e: React.FormEvent<HTMLInputElement>) => {
+  handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const [errors, form] = this.props.validate(this.state.values);
     if (form) {
@@ -86,6 +86,7 @@ export default class BabyFormik<T extends {}> extends React.Component<
   };
   validateAndPrefetch = (values: BFValues<T>) => {
     const [errors, form] = this.props.validate(values);
+    errors;
     if (form) this.props.prefetch(form);
   };
   prefetchIfValid = () => {
