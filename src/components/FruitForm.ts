@@ -1,7 +1,7 @@
 import * as t from "io-ts";
 
 // represents a Date from an ISO string
-const DateFromString = new t.Type<Date, string>(
+const dateFromString = new t.Type<Date, string>(
   "DateFromString",
   (m): m is Date => m instanceof Date,
   (m, c) =>
@@ -12,9 +12,27 @@ const DateFromString = new t.Type<Date, string>(
   a => a.toISOString()
 );
 
+const today = () => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const dateAfteToday = t.refinement(
+  dateFromString,
+  x => x.getTime() > today().getTime(),
+  "dateAfteToday"
+);
+
+const nonEmptyString = t.refinement(
+  t.string,
+  x => x.trim().length > 0,
+  "nonEmptyString"
+);
+
 export const FruitForm = t.type({
-  name: t.string,
-  start: DateFromString
+  name: nonEmptyString,
+  start: dateAfteToday
 });
 
 export interface IFruitForm extends t.TypeOf<typeof FruitForm> {}

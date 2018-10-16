@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Either } from "fp-ts/lib/Either";
 
 type ObjMap<O extends {}, T> = { [K in keyof O]: T };
 type Shape<T> = Partial<T>;
@@ -13,7 +14,7 @@ interface IBFState<T> {
   touched: BFTouched<T>;
   isSubmitting: boolean;
 }
-export type BFValidate<T> = (values: BFValues<T>) => [BFErrors<T>, T | void];
+export type BFValidate<T> = (values: BFValues<T>) => Either<BFErrors<T>, T>;
 
 // as of now consider only date input,
 // but also should include select, checkbox and other
@@ -49,19 +50,21 @@ export default class BabyFormik<T extends {}> extends React.Component<
   }
   handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const [errors, form] = this.props.validate(this.state.values);
-    if (form) {
-      this.setState({ isSubmitting: true });
-      this.props.submit(form);
-    } else {
-      this.setState({
-        errors,
-        touched: Object.keys(errors).reduce(
-          (acc, key) => ({ ...acc, [key]: true }),
-          {}
-        )
-      });
-    }
+    this.props.validate(this.state.values).fold(
+      errors => {
+        this.setState({
+          errors,
+          touched: Object.keys(errors).reduce(
+            (acc, key) => ({ ...acc, [key]: true }),
+            {}
+          )
+        });
+      },
+      form => {
+        this.setState({ isSubmitting: true });
+        this.props.submit(form);
+      }
+    );
   };
   handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
@@ -76,18 +79,28 @@ export default class BabyFormik<T extends {}> extends React.Component<
   };
   handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, type } = e.target;
-    const [errors, form] = this.props.validate(this.state.values);
-    this.setState({
-      // Object.assign because spread doesn't work https://github.com/Microsoft/TypeScript/issues/10727
-      touched: Object.assign({}, this.state.touched, { [name]: true }),
-      errors
-    });
-    if (!isDiscrete(type)) if (form) this.props.prefetch(form);
+    this.props.validate(this.state.values).fold(
+      errors => {
+        this.setState({
+          // Object.assign because spread doesn't work https://github.com/Microsoft/TypeScript/issues/10727
+          touched: Object.assign({}, this.state.touched, { [name]: true }),
+          errors
+        });
+      },
+      form => {
+        if (!isDiscrete(type)) if (form) this.props.prefetch(form);
+      }
+    );
   };
   validateAndPrefetch = (values: BFValues<T>) => {
-    const [errors, form] = this.props.validate(values);
-    errors;
-    if (form) this.props.prefetch(form);
+    this.props.validate(values).fold(
+      errors => {
+        errors;
+      },
+      form => {
+        this.props.prefetch(form);
+      }
+    );
   };
   prefetchIfValid = () => {
     this.validateAndPrefetch(this.state.values);
