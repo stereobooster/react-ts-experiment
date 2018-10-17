@@ -61,7 +61,7 @@ export default class BabyFormik<T extends {}> extends React.Component<
         });
       },
       form => {
-        this.setState({ isSubmitting: true });
+        this.setState({ isSubmitting: true, errors: {} });
         this.props.submit(form);
       }
     );
@@ -88,6 +88,7 @@ export default class BabyFormik<T extends {}> extends React.Component<
         });
       },
       form => {
+        this.setState({ errors: {} });
         if (!isDiscrete(type)) if (form) this.props.prefetch(form);
       }
     );
